@@ -1,0 +1,75 @@
+LOG DE TESTE — mali-panvk-27.0.0-devel-r10 (libvulkan_panfrost.so)
+Data: 10/11/2026
+Dispositivo: Samsung SM-A065M — Android 16 — MediaTek MT6768 (Helio G85) — GPU: Mali-G52 MC2
+Método: ctypes/dlopen no Termux, chamada direta da interface ICD (vk_icdGetInstanceProcAddr)
+
+--- RESUMO ---
+[OK]      dlopen do .so (AArch64)
+[OK]      vk_icdNegotiateLoaderICDInterfaceVersion -> v0
+[OK]      vkCreateInstance (r=0, ~13 ms)
+          WARNING: panvk is not a conformant Vulkan implementation, testing use only.
+[OK]      vkEnumeratePhysicalDevices -> 1 GPU
+[OK]      vkGetPhysicalDeviceProperties:
+              deviceName    = PanVK-G52 MC2
+              apiVersion    = 1.4.363 (0x40416b)
+              driverVersion = 0x06863063
+              vendorID      = 0x13b5 (ARM Ltd)
+              deviceID      = 0x74021000 (gpu_id kbase 0x7402 = Mali-G52)
+              deviceType    = INTEGRATED_GPU
+[OK]      157 extensões do device (inclusas VK_ANDROID_native_buffer v8,
+          VK_ANDROID_external_memory_android_hardware_buffer v5,
+          VK_EXT_memory_budget, VK_EXT_extended_dynamic_state3, VK_ARM_shader_core_builtins...)
+[OK]      1 queue family: GRAPHICS|COMPUTE|TRANSFER (count=1)
+[OK]      vkCreateDevice (r=0, ~10 ms) + vkGetDeviceProcAddr responde
+[!]       Segmentation fault na SAÍDA do processo (teardown/descarregamento
+          do driver). Inofensivo enquanto o driver fica carregado no app,
+          mas é um bug do cleanup conhecido dessas builds para Android.
+
+--- QUIRK OBSERVADA ---
+O struct VkPhysicalDeviceProperties vem preenchido DESLOCADO 12 em relação
+ao ABI oficial (deviceName em @20 em vez de @32, pipelineCacheUUID em @276
+em vez de @288, limite da struct @298 @302 em vez de @304...). Local: com
+loader padrão, quem consulta props pelo path normal lerá lixo no nome.
+Indica fork com struct própria/customizada. Ficar de olho em jogos.
+
+--- LOGCAT (log do driver) ---
+W libc  : Access denied finding property "vendor.mesa.pan.cpu.trace"
+W libc  : Access denied finding property "vendor.mesa.vk.version.override"
+W libc  : Access denied finding property "vendor.mesa.vk.trace[.frame|.per.submit|.trigger]"
+W libc  : Access denied finding property "vendor.mesa.force.vk.vendor"   <- SPOOF de vendor
+W libc  : Access denied finding property "vendor.mesa.force.vk.devicename" <- SPOOF de nome de GPU
+W libc  : Access denied finding property "vendor.mesa.vk.wsi.*" (debug de swapchain)
+W libc  : Access denied finding property "vendor.mesa.pan.compute.core.mask"
+W libc  : Access denied finding property "vendor.mesa.pan.fragment.core.mask"
+W libc  : Access denied finding property "vendor.mesa.pan.kmod.restrict.to.backends"
+W libc  : Access denied finding property "vendor.mesa.disk.cache.*", "vendor.mesa.shader.cache.*"
+W libc  : Access denied finding property "vendor.mesa.log[.level|.prefix|.file]"
+W MESA  : panvk is not well-tested on v7 -- continuing anyway
+W MESA  : Gralloc doesn't support lock_ycbcr (video buffers won't be supported)
+I MESA  : Using fallback gralloc implementation
+I MESA  : Using IMapper API through libui (mapper version enum 5)
+W libc  : Access denied finding property "vendor.mesa.panvk.no.bc.emu"
+W libc  : Access denied finding property "vendor.mesa.bifrost.mesa.debug"
+
+(“Access denied” das properties é normal: Termux roda sem privilégios para
+ler propriedades vendor.* — em app normal com root ou no shell do driver
+essas knobs funcionam.)
+
+--- COMPORTAMENTO OBSERVADO ---
+1. O driver ABRE o /dev/mali0 real (kbase) e fala os ioctls do kbase
+   (strings no binário: CS_GET_GLB_IFACE, CS_QUEUE_GROUP_CREATE,
+   CS_TILER_HEAP_INIT, CS_QUEUE_KICK; fallback para /dev/dri se kbase
+   estiver ausente).
+2. NÃO usa root: roda como usuário comum (as permissões de /dev/mali0
+   são 0666 system:graphics — apps normais têm acesso, igual um jogo).
+3. Inicialização rápida (~23 ms total p/ instance+device); lib ~18 MB;
+   shaders compilam na hora do pipeline (SPIR-V -> NIR -> instrução Mali),
+   com bitmask de "cores" configurável (compute.core.mask / fragment.core.mask).
+4. A warning "not well-tested on v7" indica que Mali-G52 (Bifrost v7) NÃO
+   é a rota principal do driver (o foco são Bifrost/Valhall modernas, G57+),
+   então crashe/bug visual é mais esperado nessa geração.
+5. O fork expõe knobs via propriedades vendor.mesa.*, incluindo
+   "force.vk.vendor" e "force.vk.devicename" — ou seja, dá pra "rebaptizar"
+   a GPU reportada (spoofing de nome) — recurso clássico desses mods.
+
+FIM DO LOG

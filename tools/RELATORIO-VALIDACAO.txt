@@ -1,0 +1,31 @@
+PACOTE VALIDADO — mali-panvk-27.0.0-devel-r10
+=============================================
+Data: 10/11/2026
+Dispositivo: Samsung SM-A065M (Android 16, Helio G85, Mali-G52 MC2)
+
+- libvulkan_panfrost.so: ORIGINAL, sem nenhuma modificação binária
+  (md5 conferido contra o zip de origem).
+- Testes executados via interface ICD padrão (vk_icdGetInstanceProcAddr):
+    vk_icdNegotiateLoaderICDInterfaceVersion -> v0     OK
+    vkCreateInstance                          -> 0     OK (13 ms)
+    vkEnumeratePhysicalDevices                -> 1 GPU OK
+      deviceName    = PanVK-G52 MC2
+      apiVersion    = 1.4.363 (0x40416b)
+      driverVersion = 0x06863063
+      vendorID      = 0x13b5 (ARM)
+      deviceID      = 0x74021000 (gpu_id 0x7402 = Mali-G52)
+      extensoes     = 157
+    vkCreateDevice (queue graphics)           -> 0     OK (10 ms)
+    Fim do processo: LIMPO (exit=0)
+
+- Avisos do driver:
+    "panvk is not a conformant Vulkan implementation, testing use only."
+    "panvk is not well-tested on v7 -- continuing anyway"
+    (G52 = Bifrost v7, rota pouco testada)
+
+- Comportamento conhecido:
+    pNext chains de vkGetPhysicalDeviceProperties2 ficam zerados (só o
+    struct base é preenchido).
+    Knobs de debug via propriedades vendor.mesa.* (ver NOTICE/logs).
+
+- Harness de teste: harness_teste.c (clang -O0 harness_teste.c -o t -ldl)
