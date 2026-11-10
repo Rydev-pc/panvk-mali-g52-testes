@@ -98,6 +98,12 @@ modificação binária (md5 idêntico ao zip de origem).
 | **Vulkan-Headers** (Khronos) | Fonte da verdade do ABI (`vulkan_core.h`) |
 | **zip / unzip** | Extração e empacotamento |
 
+## Pacote validado (neste repo)
+
+`release/mali-panvk-27.0.0-devel-r10-validado.zip` — driver **original intocado**
+(md5 idêntico ao zip de origem) + relatório de validação + harness de teste.
+Diferenças detalhadas original x validado: [`docs/DIFERENCAS-ORIGINAL-X-VALIDADO.md`](docs/DIFERENCAS-ORIGINAL-X-VALIDADO.md)
+
 ## Créditos e referências
 
 - **JimVulkan** — autor do `mali-panvk` (o driver avaliado): https://github.com/JimVulkan/mali-panvk
@@ -118,4 +124,6 @@ modificação binária (md5 idêntico ao zip de origem).
 - `docs/panvk_analise_detalhada.md` — passo a passo simples da análise do driver
 - `docs/panvk_test_log.txt` — log técnico do primeiro round de testes
 - `tools/RELATORIO-VALIDACAO.txt` — relatório final de validação
+- `docs/DIFERENCAS-ORIGINAL-X-VALIDADO.md` — original x pacote validado (checksums + correções do harness)
+- `release/mali-panvk-27.0.0-devel-r10-validado.zip` — driver original + relatório + harness
 - `tools/c_vktest.c` — harness de teste em C (compile no Termux: `clang -O0 c_vktest.c -o t -ldl`)
